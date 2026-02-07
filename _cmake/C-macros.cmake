@@ -1,0 +1,7 @@
+string(LENGTH "${CMAKE_SOURCE_DIR}/" SOURCE_PATH_SIZE)
+add_definitions(-DSOURCE_PATH_SIZE=${SOURCE_PATH_SIZE})
+
+set(MACRO_LIST
+    "MY_MACRO"
+    "MY_MACRO_2"
+)

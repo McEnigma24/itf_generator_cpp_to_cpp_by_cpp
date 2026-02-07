@@ -1,0 +1,116 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "description": "The concept is that we set all specifig flags / paths / variables so that we don't have to set them mannualy in scripts",
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/",
+      "cacheVariables": {
+        "FATAL_ERRORS_FLAG": "ON",
+        "CTEST_ACTIVE": "OFF"
+      }
+    },
+    {
+      "name": "ninja-debug",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "ninja-debug-test",
+      "inherits": "ninja-debug",
+      "cacheVariables": {
+        "CTEST_ACTIVE": "ON"
+      }
+    },
+    {
+      "name": "ninja-release",
+      "inherits": "ninja-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CTEST_ACTIVE": "OFF"
+      }
+    },
+    {
+      "name": "make-debug",
+      "inherits": "base",
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "make-debug-test",
+      "inherits": "make-debug",
+      "cacheVariables": {
+        "CTEST_ACTIVE": "ON"
+      }
+    },
+    {
+      "name": "make-release",
+      "inherits": "make-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CTEST_ACTIVE": "OFF"
+      }
+    },
+    {
+      "name": "ninja-release-win64",
+      "inherits": "ninja-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "_cmake/toolchains/mingw-w64.cmake"
+      }
+    },
+    {
+      "name": "make-release-win64",
+      "inherits": "make-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "_cmake/toolchains/mingw-w64.cmake"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ninja-debug",
+      "configurePreset": "ninja-debug"
+    },
+    {
+      "name": "ninja-debug-test",
+      "configurePreset": "ninja-debug-test"
+    },
+    {
+      "name": "ninja-release",
+      "configurePreset": "ninja-release"
+    },
+    {
+      "name": "make-debug",
+      "configurePreset": "make-debug"
+    },
+    {
+      "name": "make-debug-test",
+      "configurePreset": "make-debug-test"
+    },
+    {
+      "name": "make-release",
+      "configurePreset": "make-release"
+    },
+    {
+      "name": "ninja-release-win64",
+      "configurePreset": "ninja-release-win64"
+    },
+    {
+      "name": "make-release-win64",
+      "configurePreset": "make-release-win64"
+    }
+  ]
+}

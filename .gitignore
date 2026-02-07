@@ -1,0 +1,22 @@
+# CMake build files - should only be in build/
+# These files in root directory are created when CMake is run without preset (e.g. "cmake .")
+# Always use "cmake --preset <preset>" to put files in build/ directory
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+
+# Build directory
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
