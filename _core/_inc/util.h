@@ -17,6 +17,16 @@
 // #define linee(x) cout << x << ' ';
 // #define nline    cout << '\n';
 
+#define CRASH_log(x)                                                                                                                                 \
+    std::cerr << __FILENAME__ << ":" << __LINE__ << " - " << x << std::endl;                                                                         \
+    assert(false);
+#define CRASH_ON_NULL(x)                                                                                                                             \
+    if (x == nullptr) { CRASH_log(#x << " is nullptr"); }
+#define CRASH_ON_FALSE(x)                                                                                                                            \
+    if (x == false) { CRASH_log(#x << " is false"); }
+#define CRASH_ON_TRUE(x)                                                                                                                             \
+    if (x == true) { CRASH_log(#x << " is true"); }
+
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;

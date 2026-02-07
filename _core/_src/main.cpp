@@ -48,172 +48,6 @@ using namespace std;
 
 // Itf generating prep phase //   with this data we get to know how to generate User functions
 
-#define bits(x)                                                                                                                                      \
-    {                                                                                                                                                \
-        bitset<sizeof(x) * 8> bit(x);                                                                                                                \
-        cout << #x << " = " << bit << '\n';                                                                                                          \
-    }
-#define bitss(x)                                                                                                                                     \
-    {                                                                                                                                                \
-        bitset<sizeof(x) * 8> bit(x);                                                                                                                \
-        cout << #x << " = " << bit << ' ';                                                                                                           \
-    }
-#define var(x)  cout << #x << " = " << (int64_t)x << '\n';
-#define varr(x) cout << #x << " = " << (int64_t)x << ' ';
-#define line(x) cout << x << '\n';
-
-template <typename T>
-i8 bitsof(const T& variable)
-{
-    return sizeof(T) * 8;
-}
-
-template <typename T>
-char* get_first_byte(const T& variable)
-{
-    if constexpr ((std::endian::native) == (std::endian::big)) { return (char*)&variable; }
-    else if constexpr ((std::endian::native) == (std::endian::little)) { return (char*)&variable + sizeof(T) - 1; }
-}
-
-void move_to_next_byte(char*& byte, u8 amount = 1)
-{
-    if constexpr ((std::endian::native) == (std::endian::big)) { byte += amount; }
-    else if constexpr ((std::endian::native) == (std::endian::little)) { byte -= amount; }
-}
-
-// IMPROVEMENT //
-//
-// - jak mamy cały 1 byte do odpakowania to możemy po prostu cały przenieść, bez wyciągania konkretnych bitów
-//    to można by w IF'ach dodać, w momencie przechodzenia do nowego, to sprawdzamy czy nie można by ruszyć całości
-//    jak można to ruszamy tyle razy ile się da i wracamy do przepisywania bit po bicie
-//
-// - można w ogóle nie iść 1 po 2, tylko obliczać ile bitów mamy do ruszenia i np. robić maskę na 6 bitów
-
-template <typename T>
-tuple<char*, u8> packin(const T& variable, char* _output_byte_current, const u8 _output_bit_current_in_this_byte_left_to_right)
-{
-    char* output_byte_current = _output_byte_current;
-    u8 output_bit_current_in_this_byte_left_to_right = _output_bit_current_in_this_byte_left_to_right;
-
-    char* input_byte = get_first_byte(variable);
-    const u8 input_bit_width = std::bit_width(variable);
-    var(input_bit_width);
-
-    // advance past initial empty bytes //
-    {
-        auto variable_total_bit_length = bitsof(variable);
-        i8 bytes_to_advance = (variable_total_bit_length - input_bit_width) / 8;
-        move_to_next_byte(input_byte, bytes_to_advance);
-    }
-
-    for (u8 i = (input_bit_width - 1); i >= 0; i--)
-    {
-        varr(i);
-
-        // extract //
-        u8 input_mask = u8(1) << (i % 8);
-        bitss(input_mask);
-        bitss((*input_byte));
-        u8 input_value = (bool)((*input_byte) & input_mask);
-        varr(input_value);
-
-        // insert //
-        (*output_byte_current) |= (input_value << (7 - output_bit_current_in_this_byte_left_to_right));
-
-        if (++output_bit_current_in_this_byte_left_to_right == 8)
-        {
-            output_byte_current++;
-            output_bit_current_in_this_byte_left_to_right = 0;
-        }
-
-        if (i == 0) { break; }
-        if ((i % 8) == 0) { move_to_next_byte(input_byte); }
-
-        line("");
-    }
-    line("");
-    line("--------------");
-
-    return {output_byte_current, output_bit_current_in_this_byte_left_to_right};
-}
-
-template <u8 bit_width>
-using minimal_uint = std::conditional_t<(bit_width <= 8), uint8_t,
-                                        std::conditional_t<(bit_width <= 16), uint16_t, std::conditional_t<(bit_width <= 32), uint32_t, uint64_t>>>;
-
-template <u8 bit_width>
-minimal_uint<bit_width> unpackin(char* packed_starting_byte, u8 packed_starting_bit_offset) // offset is directly at first bit
-{
-    minimal_uint<bit_width> result = 0;
-    u8 result_current_bit_offset = bitsof(result) - bit_width; // initial result bit offset - to skip empty bits at front
-    char* result_current_byte = get_first_byte(result);
-
-    char* packed_current_byte = packed_starting_byte;
-
-    for (u8 i = 0; i < bit_width; i++)
-    {
-        // extract //
-        u8 packed_mask = u8(1) << (7 - packed_starting_bit_offset);
-        u8 packed_value = (bool)((*packed_current_byte) & packed_mask);
-
-        bitss(packed_mask);
-        bitss((*packed_current_byte));
-        varr(packed_value);
-
-        // insert //
-        (*result_current_byte) |= (packed_value << (7 - result_current_bit_offset));
-
-        if (++result_current_bit_offset == 8)
-        {
-            result_current_bit_offset = 0;
-            move_to_next_byte(result_current_byte);
-        }
-        if (++packed_starting_bit_offset == 8)
-        {
-            packed_starting_bit_offset = 0;
-            packed_current_byte++;
-        }
-
-        line("");
-    }
-    line("");
-    line("--------------");
-
-    return result;
-}
-
-// int main()
-// {
-//     srand(time(NULL));
-
-//     uint16_t a = 0;
-//     bits(a);
-
-//     char tab[3] = {0};
-//     char* output_byte_current = tab;
-//     u8 output_bit_current = 0;
-//     { int i=1; for(const auto& c : tab) { cout << i++ << " "; bits(c); } }
-
-//     // packin //
-//     a = 2047 - 1 - 32; bits(a);
-//     packin(a, output_byte_current, output_bit_current);
-//     { int i=1; for(const auto& c : tab) { cout << i++ << " "; bits(c); } }
-
-//     a = 255 - 64; bits(a);
-//     packin(a, output_byte_current, output_bit_current);
-//     { int i=1; for(const auto& c : tab) { cout << i++ << " "; bits(c); } }
-
-//     line("");line("");line("");line("");line("");line("");
-
-//     // unpackin //
-//     char* packed_byte_current = tab;
-//     auto first = unpackin<11>(packed_byte_current, 0);                       var(first);
-//     auto second = unpackin<8>(++packed_byte_current, 3);                     var(second);
-
-//     line("");line("");line("");line("");line("");line("");
-//     return 0;
-// }
-
 class scopedTab
 {
     std::string og;
@@ -229,24 +63,44 @@ class uintPack
 {
 public:
     std::string name;
+    std::string packed_type;
+    std::string unpacked_type;
     u64 start;
     u64 stop;
-    u64 numOfNeededBits; // later we sort by this
+    u64 numOfNeededBitsPacked;
+    u64 numOfNeededBitsUnpacked;
     u64 base;
+
+    std::string type_giver(const u64 numOfNeededBits)
+    {
+        if (numOfNeededBits <= 8) { return "uint8_t"; }
+        else if (numOfNeededBits <= 16) { return "uint16_t"; }
+        else if (numOfNeededBits <= 32) { return "uint32_t"; }
+        else if (numOfNeededBits <= 64) { return "uint64_t"; }
+        else { throw std::runtime_error("Too many bits needed - " + std::to_string(numOfNeededBits)); }
+    }
 
     uintPack(std::string name, u64 start,
              u64 stop) // how many numbers we need     <110, 140>   this range needs only 30 numbers -> how many bits do we really need
     {
+        CRASH_ON_FALSE(start < stop);
+
         this->name = name;
         this->start = start;
         this->stop = stop;
 
         base = start;
 
-        u64 range = stop - start; // 140 - 110 == 30
-        numOfNeededBits = std::bit_width(range);
+        numOfNeededBitsUnpacked = std::bit_width(stop);
 
-        var(numOfNeededBits);
+        u64 range = stop - start; // 140 - 110 == 30
+        numOfNeededBitsPacked = std::bit_width(range);
+
+        var(numOfNeededBitsPacked);
+        var(numOfNeededBitsUnpacked);
+
+        unpacked_type = type_giver(numOfNeededBitsUnpacked);
+        packed_type = type_giver(numOfNeededBitsPacked);
     }
 };
 
@@ -263,16 +117,23 @@ public:
 
         // stub //
         name = "msg1"; // value range //
-        uintPacks.emplace_back("var_a", 110, 140);
+        uintPacks.emplace_back("var_a", 100'000, 100'010);
+        uintPacks.emplace_back("var_b", 100, 103);
+        uintPacks.emplace_back("var_c", 100, 103);
+        uintPacks.emplace_back("var_d", 0, 100'000'000);
+        uintPacks.emplace_back("var_e", 100, 103);
+        uintPacks.emplace_back("var_f", 100, 103);
+        uintPacks.emplace_back("var_g", 100, 103);
 
         auto totalNumOfNeededBits =
-            std::accumulate(uintPacks.begin(), uintPacks.end(), 0, [](u64 sum, const uintPack& pack) { return sum + pack.numOfNeededBits; });
+            std::accumulate(uintPacks.begin(), uintPacks.end(), 0, [](u64 sum, const uintPack& pack) { return sum + pack.numOfNeededBitsPacked; });
         numOfNeededBytes = (totalNumOfNeededBits + 7) / 8;
 
         // reordering Packs //
 
         // sort by number of needed bits descending
-        std::sort(uintPacks.begin(), uintPacks.end(), [](const uintPack& a, const uintPack& b) { return a.numOfNeededBits > b.numOfNeededBits; });
+        std::sort(uintPacks.begin(), uintPacks.end(),
+                  [](const uintPack& a, const uintPack& b) { return a.numOfNeededBitsPacked > b.numOfNeededBitsPacked; });
     }
 
     void generate()
@@ -288,7 +149,10 @@ public:
         std::string prefix = "";
 
         file("#pragma once");
+        file("#include <span>");
         file("#include <array>");
+        f;
+        file("#include \"static_itf_files.h\"");
         f;
         file("class " << name);
         file("{");
@@ -300,6 +164,7 @@ public:
             f;
 
             fil("public:");
+            f;
 
             // constructor //
             {
@@ -312,28 +177,60 @@ public:
                     file("\tthrow std::runtime_error(\"Incorrect payload size\");");
                     file("}");
                     f;
-                    file("if ( payload == nullptr ){");
+                    file("if ( _payload == nullptr ){");
                     file("\tthrow std::runtime_error(\"Payload is nullptr\");");
                     file("}");
                     f;
                     file("payload = _payload;");
-                    file("known_payload_size = _payload_size;");
                 }
                 file("}");
+                f;
+
+
+                file(name << "( std::span<char> _payload )");
+                file("\t: msg1(_payload.data(), _payload.size())");
+                file("{");
+                file("}");
+                f;
             }
 
-            // packin functions for every member //
+            // packin / unpackin   functions for every member //
             {
+                std::size_t current_byte_offset = 0;
+                std::size_t acc_bit_offset = 0;
+
                 for (auto& pack : uintPacks)
                 {
-                    file("get_" << pack.name << "()");
+                    file("explicit void save_" << pack.name << "( const " << pack.unpacked_type << " value )");
                     file("{");
                     {
                         scopedTab tab_2(prefix);
                         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+                        file("CRASH_ON_FALSE(" << pack.start << " <= value " << "&&" << " value <= " << pack.stop << " );");
+
+                        file("packin<" << pack.numOfNeededBitsPacked << ">(" << "static_cast<" << pack.packed_type << ">(value - " << pack.base << "), "
+                            << "( payload + " << current_byte_offset << " ), " << acc_bit_offset << ");");
                     }
                     file("}");
                     f;
+
+                    file("" << pack.unpacked_type << " get_" << pack.name << "() const");
+                    file("{");
+                    {
+                        scopedTab tab_2(prefix);
+                        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+                        file("return unpackin<" << pack.numOfNeededBitsPacked << ">(( payload + " << current_byte_offset << " ), " << acc_bit_offset << ")");
+                        file("\t\t+ " << pack.base << ";");
+                    }
+                    file("}");
+                    f;
+
+                    acc_bit_offset += pack.numOfNeededBitsPacked;
+                    if(acc_bit_offset >= 8)
+                    {
+                        current_byte_offset += (acc_bit_offset / 8);
+                        acc_bit_offset %= 8;
+                    }
                 }
             }
         }
@@ -345,21 +242,9 @@ public:
     }
 };
 
-// Itf generating phase //   functions that generate cpp code
-
-// User functions //
-
-class pack
-{
-};
-
-class unpack
-{
-};
-
 int main()
 {
-    SingleMsgGenerator g("dupa");
+    SingleMsgGenerator g("stup - not currently active");
     g.generate();
 }
 
