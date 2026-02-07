@@ -117,6 +117,8 @@ void packin(const T& variable, char*& output_byte_current, u8& output_bit_curren
         move_to_next_byte(input_byte, bytes_to_advance);
     }
 
+
+    
     for(u8 i = (input_bit_width - 1); i >= 0; i--)
     {
         varr(i);
@@ -291,7 +293,7 @@ public:
 
             for(auto& pack : uintPacks)
             {
-                
+
             }
 
         file << "};" << "\n";
