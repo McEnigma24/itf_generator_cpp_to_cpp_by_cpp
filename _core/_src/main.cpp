@@ -112,13 +112,11 @@ void packin(const T& variable, char*& output_byte_current, u8& output_bit_curren
 
     // advance past initial empty bytes //
     {
-        auto variable_total_bit_length = bitsof(variable);
+                    auto variable_total_bit_length = bitsof(variable);
         i8 bytes_to_advance = (variable_total_bit_length - input_bit_width) / 8;
         move_to_next_byte(input_byte, bytes_to_advance);
     }
 
-
-    
     for(u8 i = (input_bit_width - 1); i >= 0; i--)
     {
         varr(i);
