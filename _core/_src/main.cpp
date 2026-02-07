@@ -214,6 +214,17 @@ minimal_uint<bit_width> unpackin(char* packed_starting_byte, u8 packed_starting_
 //     return 0;
 // }
 
+class scopedTab
+{
+    std::string og;
+    std::string& s;
+
+public:
+    scopedTab(std::string& s) : og(s), s(s) { s += "\t"; }
+
+    ~scopedTab() { s = og; }
+};
+
 class uintPack
 {
 public:
@@ -259,30 +270,78 @@ public:
         numOfNeededBytes = (totalNumOfNeededBits + 7) / 8;
 
         // reordering Packs //
+
+        // sort by number of needed bits descending
+        std::sort(uintPacks.begin(), uintPacks.end(), [](const uintPack& a, const uintPack& b) { return a.numOfNeededBits > b.numOfNeededBits; });
     }
 
     void generate()
     {
-        std::ofstream file("output/test.hpp");
+// clang-format off
+        #define f _file << "\n";
+        #define fil(x) _file << x << "\n";
+        #define fill(x) _file << x << " ";
+        #define file(x) _file << prefix << x << "\n";
+        #define filee(x) _file << prefix << x << " ";
 
-        file << "#pragma once\n\n";
-        file << "#include <array> \n";
-        file << "\n";
-        file << "class " << name << " \n";
-        file << "{"
-             << "\n";
+        std::ofstream _file("output/test.hpp");
+        std::string prefix = "";
 
-        file << "\t"
-             << "std::array<char, " << numOfNeededBytes << "> payload;"
-             << "\n";
-        file << "\n";
+        file("#pragma once");
+        file("#include <array>");
+        f;
+        file("class " << name);
+        file("{");
+        {
+            scopedTab tab_1(prefix);
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+            file("char* payload = nullptr;");
+            file("const std::size_t known_payload_size = " << numOfNeededBytes << ";");
+            f;
 
-        for (auto& pack : uintPacks) {}
+            fil("public:");
 
-        file << "};"
-             << "\n";
+            // constructor //
+            {
+                file(name << "( char* _payload, std::size_t _payload_size )");
+                file("{");
+                {
+                    scopedTab tab_2(prefix);
+                    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+                    file("if ( _payload_size != known_payload_size ){");
+                    file("\tthrow std::runtime_error(\"Incorrect payload size\");");
+                    file("}");
+                    f;
+                    file("if ( payload == nullptr ){");
+                    file("\tthrow std::runtime_error(\"Payload is nullptr\");");
+                    file("}");
+                    f;
+                    file("payload = _payload;");
+                    file("known_payload_size = _payload_size;");
+                }
+                file("}");
+            }
 
-        file.close();
+            // packin functions for every member //
+            {
+                for (auto& pack : uintPacks)
+                {
+                    file("get_" << pack.name << "()");
+                    file("{");
+                    {
+                        scopedTab tab_2(prefix);
+                        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+                    }
+                    file("}");
+                    f;
+                }
+            }
+        }
+
+        file("};");
+
+        _file.close();
+        // clang-format on
     }
 };
 
