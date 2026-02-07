@@ -90,8 +90,11 @@ void move_to_next_byte(char*& byte, u8 amount = 1)
 // - można w ogóle nie iść 1 po 2, tylko obliczać ile bitów mamy do ruszenia i np. robić maskę na 6 bitów
 
 template <typename T>
-void packin(const T& variable, char*& output_byte_current, u8& output_bit_current_in_this_byte_left_to_right)
+tuple<char*, u8> packin(const T& variable, char* _output_byte_current, const u8 _output_bit_current_in_this_byte_left_to_right)
 {
+    char* output_byte_current = _output_byte_current;
+    u8 output_bit_current_in_this_byte_left_to_right = _output_bit_current_in_this_byte_left_to_right;
+
     char* input_byte = get_first_byte(variable);
     const u8 input_bit_width = std::bit_width(variable);
     var(input_bit_width);
@@ -130,6 +133,8 @@ void packin(const T& variable, char*& output_byte_current, u8& output_bit_curren
     }
     line("");
     line("--------------");
+
+    return {output_byte_current, output_bit_current_in_this_byte_left_to_right};
 }
 
 template <u8 bit_width>

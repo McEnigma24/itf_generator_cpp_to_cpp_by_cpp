@@ -21,3 +21,5 @@ include_directories(${json_SOURCE_DIR}/include/nlohmann)
 
 MESSAGE(STATUS "JSON")
 
+
+MESSAGE(STATUS "DONE: ALL_LIBRARIES=${ALL_LIBRARIES}")
