@@ -1,20 +1,20 @@
-#include <iostream>
-#include <fstream>
+#include <array>
 #include <bit>
-#include <stack>
+#include <bitset>
+#include <cstddef>
 #include <cstdint>
+#include <deque>
+#include <fstream>
+#include <initializer_list>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <span>
+#include <sstream>
+#include <stack>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
-#include <array>
-#include <span>
-#include <initializer_list>
-#include <cstddef>
-#include <stdexcept>
-#include <memory>
-#include <sstream>
-#include <map>
-#include <deque>
-#include <bitset>
 
 using namespace std;
 
@@ -41,57 +41,45 @@ using namespace std;
 // zajmują najmniej pamięci jak się da -> ogarniamy ile unikatowych liczb trzeba reprezentować
 // jedyne co zapisujemy -> to  bo z interfacu już wywnioskujemy jaki to range i dodamy odpowiednią bazę
 
-
-
 // int, range = contiguous, no wrap around, start <= stop //
 
 // MSG -> unikatowe wartości zawsze w rangu od <0, x>
 // ITF -> baza, którą dodajemy do liczby w MSG'u -> odpowiedni typ, tak aby w nim zapisać po prostu tą liczbę
 
-
-
 // Itf generating prep phase //   with this data we get to know how to generate User functions
 
-
-
-#define bits(x) { bitset<sizeof(x) * 8> bit(x); cout << #x << " = " << bit << '\n'; }
-#define bitss(x) { bitset<sizeof(x) * 8> bit(x); cout << #x << " = " << bit << ' '; }
-#define var(x) cout << #x << " = " << (int64_t)x << '\n';
+#define bits(x)                                                                                                                                      \
+    {                                                                                                                                                \
+        bitset<sizeof(x) * 8> bit(x);                                                                                                                \
+        cout << #x << " = " << bit << '\n';                                                                                                          \
+    }
+#define bitss(x)                                                                                                                                     \
+    {                                                                                                                                                \
+        bitset<sizeof(x) * 8> bit(x);                                                                                                                \
+        cout << #x << " = " << bit << ' ';                                                                                                           \
+    }
+#define var(x)  cout << #x << " = " << (int64_t)x << '\n';
 #define varr(x) cout << #x << " = " << (int64_t)x << ' ';
 #define line(x) cout << x << '\n';
 
-template<typename T>
+template <typename T>
 i8 bitsof(const T& variable)
 {
     return sizeof(T) * 8;
 }
 
-template<typename T>
+template <typename T>
 char* get_first_byte(const T& variable)
 {
-    if constexpr ((std::endian::native) == (std::endian::big))
-    {
-        return (char*)&variable;
-    }
-    else if constexpr ((std::endian::native) == (std::endian::little))
-    {
-        return (char*)&variable + sizeof(T) - 1;
-    }
+    if constexpr ((std::endian::native) == (std::endian::big)) { return (char*)&variable; }
+    else if constexpr ((std::endian::native) == (std::endian::little)) { return (char*)&variable + sizeof(T) - 1; }
 }
 
 void move_to_next_byte(char*& byte, u8 amount = 1)
 {
-    if constexpr ((std::endian::native) == (std::endian::big))
-    {
-        byte += amount;
-    }
-    else if constexpr ((std::endian::native) == (std::endian::little))
-    {
-        byte -= amount;
-    }
+    if constexpr ((std::endian::native) == (std::endian::big)) { byte += amount; }
+    else if constexpr ((std::endian::native) == (std::endian::little)) { byte -= amount; }
 }
-
-
 
 // IMPROVEMENT //
 //
@@ -101,9 +89,7 @@ void move_to_next_byte(char*& byte, u8 amount = 1)
 //
 // - można w ogóle nie iść 1 po 2, tylko obliczać ile bitów mamy do ruszenia i np. robić maskę na 6 bitów
 
-
-
-template<typename T>
+template <typename T>
 void packin(const T& variable, char*& output_byte_current, u8& output_bit_current_in_this_byte_left_to_right)
 {
     char* input_byte = get_first_byte(variable);
@@ -112,30 +98,33 @@ void packin(const T& variable, char*& output_byte_current, u8& output_bit_curren
 
     // advance past initial empty bytes //
     {
-                    auto variable_total_bit_length = bitsof(variable);
+        auto variable_total_bit_length = bitsof(variable);
         i8 bytes_to_advance = (variable_total_bit_length - input_bit_width) / 8;
         move_to_next_byte(input_byte, bytes_to_advance);
     }
 
-    for(u8 i = (input_bit_width - 1); i >= 0; i--)
+    for (u8 i = (input_bit_width - 1); i >= 0; i--)
     {
         varr(i);
 
         // extract //
-        u8 input_mask = u8(1) << (i % 8);                              bitss(input_mask); bitss((*input_byte));
-        u8 input_value = (bool) ((*input_byte) & input_mask);          varr(input_value);
+        u8 input_mask = u8(1) << (i % 8);
+        bitss(input_mask);
+        bitss((*input_byte));
+        u8 input_value = (bool)((*input_byte) & input_mask);
+        varr(input_value);
 
         // insert //
         (*output_byte_current) |= (input_value << (7 - output_bit_current_in_this_byte_left_to_right));
 
-        if(++output_bit_current_in_this_byte_left_to_right == 8)
+        if (++output_bit_current_in_this_byte_left_to_right == 8)
         {
             output_byte_current++;
             output_bit_current_in_this_byte_left_to_right = 0;
         }
 
-        if(i == 0) { break; }
-        if((i % 8) == 0) { move_to_next_byte(input_byte); }
+        if (i == 0) { break; }
+        if ((i % 8) == 0) { move_to_next_byte(input_byte); }
 
         line("");
     }
@@ -144,10 +133,8 @@ void packin(const T& variable, char*& output_byte_current, u8& output_bit_curren
 }
 
 template <u8 bit_width>
-using minimal_uint = std::conditional_t<(bit_width <= 8),  uint8_t,
-                      std::conditional_t<(bit_width <= 16), uint16_t,
-                      std::conditional_t<(bit_width <= 32), uint32_t,
-                      uint64_t>>>;
+using minimal_uint = std::conditional_t<(bit_width <= 8), uint8_t,
+                                        std::conditional_t<(bit_width <= 16), uint16_t, std::conditional_t<(bit_width <= 32), uint32_t, uint64_t>>>;
 
 template <u8 bit_width>
 minimal_uint<bit_width> unpackin(char* packed_starting_byte, u8 packed_starting_bit_offset) // offset is directly at first bit
@@ -158,27 +145,25 @@ minimal_uint<bit_width> unpackin(char* packed_starting_byte, u8 packed_starting_
 
     char* packed_current_byte = packed_starting_byte;
 
-    for(u8 i = 0; i < bit_width; i++)
+    for (u8 i = 0; i < bit_width; i++)
     {
         // extract //
         u8 packed_mask = u8(1) << (7 - packed_starting_bit_offset);
-        u8 packed_value = (bool) ((*packed_current_byte) & packed_mask);
+        u8 packed_value = (bool)((*packed_current_byte) & packed_mask);
 
-        bitss(packed_mask); bitss((*packed_current_byte));
+        bitss(packed_mask);
+        bitss((*packed_current_byte));
         varr(packed_value);
-
 
         // insert //
         (*result_current_byte) |= (packed_value << (7 - result_current_bit_offset));
 
-
-
-        if(++result_current_bit_offset == 8)
+        if (++result_current_bit_offset == 8)
         {
             result_current_bit_offset = 0;
             move_to_next_byte(result_current_byte);
         }
-        if(++packed_starting_bit_offset == 8)
+        if (++packed_starting_bit_offset == 8)
         {
             packed_starting_bit_offset = 0;
             packed_current_byte++;
@@ -220,9 +205,6 @@ minimal_uint<bit_width> unpackin(char* packed_starting_byte, u8 packed_starting_
 //     auto first = unpackin<11>(packed_byte_current, 0);                       var(first);
 //     auto second = unpackin<8>(++packed_byte_current, 3);                     var(second);
 
-
-
-
 //     line("");line("");line("");line("");line("");line("");
 //     return 0;
 // }
@@ -233,16 +215,15 @@ public:
     std::string name;
     u64 start;
     u64 stop;
-    u64 numOfNeededBits;    // later we sort by this
+    u64 numOfNeededBits; // later we sort by this
     u64 base;
 
-
-    uintPack(std::string name, u64 start, u64 stop)   // how many numbers we need     <110, 140>   this range needs only 30 numbers -> how many bits do we really need
+    uintPack(std::string name, u64 start,
+             u64 stop) // how many numbers we need     <110, 140>   this range needs only 30 numbers -> how many bits do we really need
     {
         this->name = name;
         this->start = start;
         this->stop = stop;
-
 
         base = start;
 
@@ -260,17 +241,16 @@ class SingleMsgGenerator
     u64 numOfNeededBytes;
 
 public:
-
     SingleMsgGenerator(std::string json_input_file_name)
     {
         // parsing input //
 
-
         // stub //
-        name = "msg1";                // value range //
+        name = "msg1"; // value range //
         uintPacks.emplace_back("var_a", 110, 140);
 
-        auto totalNumOfNeededBits = std::accumulate(uintPacks.begin(), uintPacks.end(), 0, [](u64 sum, const uintPack& pack) { return sum + pack.numOfNeededBits; });
+        auto totalNumOfNeededBits =
+            std::accumulate(uintPacks.begin(), uintPacks.end(), 0, [](u64 sum, const uintPack& pack) { return sum + pack.numOfNeededBits; });
         numOfNeededBytes = (totalNumOfNeededBits + 7) / 8;
 
         // reordering Packs //
@@ -284,38 +264,33 @@ public:
         file << "#include <array> \n";
         file << "\n";
         file << "class " << name << " \n";
-        file << "{" << "\n";
+        file << "{"
+             << "\n";
 
-            file << "\t" << "std::array<char, " << numOfNeededBytes << "> payload;" << "\n";
-            file << "\n";
+        file << "\t"
+             << "std::array<char, " << numOfNeededBytes << "> payload;"
+             << "\n";
+        file << "\n";
 
-            for(auto& pack : uintPacks)
-            {
+        for (auto& pack : uintPacks) {}
 
-            }
-
-        file << "};" << "\n";
+        file << "};"
+             << "\n";
 
         file.close();
     }
 };
 
-
 // Itf generating phase //   functions that generate cpp code
-
-
-
 
 // User functions //
 
 class pack
 {
-
 };
 
 class unpack
 {
-
 };
 
 int main()
