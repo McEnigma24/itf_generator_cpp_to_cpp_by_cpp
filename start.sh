@@ -78,6 +78,8 @@ function env_prep()
     clear_dir "$DIR_OUTPUT"
 
     chmod +x scripts/*.sh
+
+    clear_file "core_dump.itf_generator*"
 }
 function build_prep()
 {

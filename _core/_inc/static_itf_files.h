@@ -9,6 +9,12 @@
 #include <span>
 #include <sstream>
 
+#undef bits
+#undef bitss
+#undef var
+#undef varr
+#undef line
+
 #define bits(x)                                                                                                                                      \
     {                                                                                                                                                \
         bitset<sizeof(x) * 8> bit(x);                                                                                                                \
@@ -22,6 +28,16 @@
 #define var(x)  cout << #x << " = " << (int64_t)x << '\n';
 #define varr(x) cout << #x << " = " << (int64_t)x << ' ';
 #define line(x) cout << x << '\n';
+
+#define CRASH_log(x)                                                                                                                                 \
+    std::cerr << "\n\n\n" << __FILENAME__ << ":" << __LINE__ << " - CRASHED - " << x << "\n\n";                                                      \
+    std::abort();
+#define CRASH_ON_NULL(x)                                                                                                                             \
+    if ((x) == nullptr) { CRASH_log(#x << " is nullptr"); }
+#define CRASH_ON_FALSE(x)                                                                                                                            \
+    if ((x) == false) { CRASH_log(#x << " is false"); }
+#define CRASH_ON_TRUE(x)                                                                                                                             \
+    if ((x) == true) { CRASH_log(#x << " is true"); }
 
 template <typename T>
 i8 bitsof(const T& variable)

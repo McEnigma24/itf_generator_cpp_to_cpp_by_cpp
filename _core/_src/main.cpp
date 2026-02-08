@@ -1,52 +1,11 @@
-#include <array>
-#include <bit>
-#include <bitset>
-#include <cstddef>
-#include <cstdint>
-#include <deque>
 #include <fstream>
-#include <initializer_list>
 #include <iostream>
-#include <map>
-#include <memory>
-#include <span>
-#include <sstream>
-#include <stack>
-#include <stdexcept>
-#include <type_traits>
-#include <vector>
 
 using namespace std;
 
 #include "json.hpp" // external lib
 #include "math.h"   // internal lib
 #include "util.h"   // local
-
-// struct uintRange
-// {
-//     u64 start;      // można zrobić z zakręcanym looped zakresem, jak przejdziemy 1 więcej niż max to zaczyna od początku
-//     u64 stop;       // np. start 64   stop 10   max_val 80
-//     u64 max_val;    // wtedy zakres to <64, 80> <0, 10>
-// };
-
-// template<typename T>
-// struct contiguousNumberRange    // można tego potem użyć jako podstawę i np. dodawać bazę do tego np. +100 i cały range się przesunie
-// {
-//     T start;    // 0
-//     T stop;     // 10
-// };
-
-// Pomysł to Inf, tak aby podczas zapisywania oraz odczytywanie używać wygenerowanych funkcji klasowych do obiektów, które w rzeczywistości //
-// są upakowane bitowo najciaśniej jak się da
-// zajmują najmniej pamięci jak się da -> ogarniamy ile unikatowych liczb trzeba reprezentować
-// jedyne co zapisujemy -> to  bo z interfacu już wywnioskujemy jaki to range i dodamy odpowiednią bazę
-
-// int, range = contiguous, no wrap around, start <= stop //
-
-// MSG -> unikatowe wartości zawsze w rangu od <0, x>
-// ITF -> baza, którą dodajemy do liczby w MSG'u -> odpowiedni typ, tak aby w nim zapisać po prostu tą liczbę
-
-// Itf generating prep phase //   with this data we get to know how to generate User functions
 
 class scopedTab
 {
@@ -70,6 +29,7 @@ public:
     u64 numOfNeededBitsPacked;
     u64 numOfNeededBitsUnpacked;
     u64 base;
+    u64 default_value;
 
     std::string type_giver(const u64 numOfNeededBits)
     {
@@ -80,14 +40,14 @@ public:
         else { throw std::runtime_error("Too many bits needed - " + std::to_string(numOfNeededBits)); }
     }
 
-    uintPack(std::string name, u64 start,
-             u64 stop) // how many numbers we need     <110, 140>   this range needs only 30 numbers -> how many bits do we really need
+    uintPack(std::string name, u64 start, u64 stop, u64 default_value = start)
     {
         CRASH_ON_FALSE(start < stop);
 
         this->name = name;
         this->start = start;
         this->stop = stop;
+        this->default_value = default_value;
 
         base = start;
 
@@ -117,13 +77,13 @@ public:
 
         // stub //
         name = "msg1"; // value range //
-        uintPacks.emplace_back("var_a", 100'000, 100'010);
-        uintPacks.emplace_back("var_b", 100, 103);
-        uintPacks.emplace_back("var_c", 100, 103);
-        uintPacks.emplace_back("var_d", 0, 100'000'000);
-        uintPacks.emplace_back("var_e", 100, 103);
-        uintPacks.emplace_back("var_f", 100, 103);
-        uintPacks.emplace_back("var_g", 100, 103);
+        uintPacks.emplace_back("var_a", 0, 100'000'000);
+        uintPacks.emplace_back("var_b", 100'000, 100'010);
+        uintPacks.emplace_back("var_c", 0, 10);
+        uintPacks.emplace_back("var_d", 0, 10);
+        uintPacks.emplace_back("var_e", 0, 10);
+        uintPacks.emplace_back("var_f", 0, 10);
+        uintPacks.emplace_back("var_g", 0, 10);
 
         auto totalNumOfNeededBits =
             std::accumulate(uintPacks.begin(), uintPacks.end(), 0, [](u64 sum, const uintPack& pack) { return sum + pack.numOfNeededBitsPacked; });
@@ -136,9 +96,9 @@ public:
                   [](const uintPack& a, const uintPack& b) { return a.numOfNeededBitsPacked > b.numOfNeededBitsPacked; });
     }
 
+    // clang-format off
     void generate()
     {
-// clang-format off
         #define f _file << "\n";
         #define fil(x) _file << x << "\n";
         #define fill(x) _file << x << " ";
@@ -149,8 +109,6 @@ public:
         std::string prefix = "";
 
         file("#pragma once");
-        file("#include <span>");
-        file("#include <array>");
         f;
         file("#include \"static_itf_files.h\"");
         f;
@@ -160,10 +118,11 @@ public:
             scopedTab tab_1(prefix);
             // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
             file("char* payload = nullptr;");
-            file("const std::size_t known_payload_size = " << numOfNeededBytes << ";");
             f;
 
-            fil("public:");
+            file("public:");
+            f;
+            file("static constexpr std::size_t known_payload_size = " << numOfNeededBytes << ";");
             f;
 
             // constructor //
@@ -182,6 +141,14 @@ public:
                     file("}");
                     f;
                     file("payload = _payload;");
+                    f;
+                    file();
+
+                    // default values for every member //
+                    for (auto& pack : uintPacks)
+                    {
+                        file("save_" << pack.name << "( " << pack.default_value << " );");
+                    }
                 }
                 file("}");
                 f;
@@ -201,14 +168,14 @@ public:
 
                 for (auto& pack : uintPacks)
                 {
-                    file("explicit void save_" << pack.name << "( const " << pack.unpacked_type << " value )");
+                    file("void save_" << pack.name << "( const " << pack.unpacked_type << " value )");
                     file("{");
                     {
                         scopedTab tab_2(prefix);
                         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
-                        file("CRASH_ON_FALSE(" << pack.start << " <= value " << "&&" << " value <= " << pack.stop << " );");
+                        file("CRASH_ON_FALSE( " << pack.start << " <= value " << "&&" << " value <= " << pack.stop << " );");
 
-                        file("packin<" << pack.numOfNeededBitsPacked << ">(" << "static_cast<" << pack.packed_type << ">(value - " << pack.base << "), "
+                        file("packin<" << pack.packed_type << ", " << pack.numOfNeededBitsPacked << ">(" << "static_cast<" << pack.packed_type << ">(value - " << pack.base << "), "
                             << "( payload + " << current_byte_offset << " ), " << acc_bit_offset << ");");
                     }
                     file("}");
@@ -238,15 +205,44 @@ public:
         file("};");
 
         _file.close();
-        // clang-format on
     }
+    // clang-format on
 };
+
+#include "test.hpp"
 
 int main()
 {
     SingleMsgGenerator g("stup - not currently active");
     g.generate();
+
+    vector<char> payload(msg1::known_payload_size);
+
+    msg1 msg(payload);
+    msg.save_var_a(100'000'000);
+    msg.save_var_b(100'000);
+    msg.save_var_c(1);
+    msg.save_var_d(2);
+    msg.save_var_e(3);
+    msg.save_var_f(4);
+    msg.save_var_g(10);
+
+    var(msg.get_var_a());
+    var(msg.get_var_b());
+    var(msg.get_var_c());
+    var(msg.get_var_d());
+    var(msg.get_var_e());
+    var(msg.get_var_f());
+    var(msg.get_var_g());
+
+    return 0;
 }
+
+// int main()
+// {
+//     SingleMsgGenerator g("stup - not currently active");
+//     g.generate();
+// }
 
 // int main()
 // {
