@@ -16,6 +16,14 @@ public:
         if (_payload == nullptr) { throw std::runtime_error("Payload is nullptr"); }
 
         payload = _payload;
+
+        save_var_a(0);
+        save_var_b(100000);
+        save_var_c(0);
+        save_var_d(0);
+        save_var_e(0);
+        save_var_f(0);
+        save_var_g(0);
     }
 
     msg1(std::span<char> _payload) : msg1(_payload.data(), _payload.size()) {}

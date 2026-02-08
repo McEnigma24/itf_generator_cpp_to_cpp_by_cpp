@@ -40,14 +40,14 @@ public:
         else { throw std::runtime_error("Too many bits needed - " + std::to_string(numOfNeededBits)); }
     }
 
-    uintPack(std::string name, u64 start, u64 stop, u64 default_value = start)
+    uintPack(std::string name, u64 start, u64 stop)
     {
         CRASH_ON_FALSE(start < stop);
 
         this->name = name;
         this->start = start;
         this->stop = stop;
-        this->default_value = default_value;
+        this->default_value = start;
 
         base = start;
 
@@ -101,7 +101,7 @@ public:
     {
         #define f _file << "\n";
         #define fil(x) _file << x << "\n";
-        #define fill(x) _file << x << " ";
+        #define filll(x) _file << x << " ";
         #define file(x) _file << prefix << x << "\n";
         #define filee(x) _file << prefix << x << " ";
 
@@ -142,7 +142,6 @@ public:
                     f;
                     file("payload = _payload;");
                     f;
-                    file();
 
                     // default values for every member //
                     for (auto& pack : uintPacks)
@@ -219,13 +218,13 @@ int main()
     vector<char> payload(msg1::known_payload_size);
 
     msg1 msg(payload);
-    msg.save_var_a(100'000'000);
-    msg.save_var_b(100'000);
-    msg.save_var_c(1);
-    msg.save_var_d(2);
-    msg.save_var_e(3);
-    msg.save_var_f(4);
-    msg.save_var_g(10);
+    // msg.save_var_a(100'000'000);
+    // msg.save_var_b(100'000);
+    // msg.save_var_c(1);
+    // msg.save_var_d(2);
+    // msg.save_var_e(3);
+    // msg.save_var_f(4);
+    // msg.save_var_g(10);
 
     var(msg.get_var_a());
     var(msg.get_var_b());

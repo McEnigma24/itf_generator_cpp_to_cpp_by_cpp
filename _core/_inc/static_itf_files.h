@@ -14,6 +14,10 @@
 #undef var
 #undef varr
 #undef line
+#undef CRASH_log
+#undef CRASH_ON_NULL
+#undef CRASH_ON_FALSE
+#undef CRASH_ON_TRUE
 
 #define bits(x)                                                                                                                                      \
     {                                                                                                                                                \
